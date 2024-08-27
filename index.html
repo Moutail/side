@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H4CK3D</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'VT323', monospace;
+            background-color: #000;
+            color: #0f0;
+            overflow: hidden;
+            cursor: none;
+        }
+        #glitch-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .glitch-element {
+            position: absolute;
+            color: #0f0;
+            font-size: 20px;
+            transform: rotate(var(--rotate));
+            animation: glitch-float 5s infinite alternate;
+        }
+        @keyframes glitch-float {
+            0% { transform: translate(0, 0) rotate(var(--rotate)); }
+            100% { transform: translate(var(--translate-x), var(--translate-y)) rotate(var(--rotate)); }
+        }
+        #terminal, #registration-form {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0f0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px #0f0;
+            width: 80%;
+            max-width: 600px;
+            height: 70vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        #output {
+            text-align: left;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        #input-line {
+            display: flex;
+            align-items: center;
+        }
+        #prompt {
+            margin-right: 10px;
+        }
+        #user-input, .form-input {
+            flex-grow: 1;
+            background-color: transparent;
+            border: none;
+            color: #0f0;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        #user-input:focus, .form-input:focus {
+            outline: none;
+            border-bottom: 1px solid #0f0;
+        }
+        #matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #0f0;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        #registration-form {
+            display: none;
+            flex-direction: column;
+        }
+        .form-submit {
+            background-color: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #login-form, #success-page {
+            display: none;
+            flex-direction: column;
+        }
+        #joker-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 15px;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 1000;
+            border-radius: 5px;
+            box-shadow: 0 0 10px #0f0;
+        }
+        #joker-button:hover {
+            background-color: #00ff00;
+            box-shadow: 0 0 15px #00ff00;
+        }
+        #joker-info {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            color: #0f0;
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-bg"></canvas>
+    <div id="glitch-container"></div>
+    <div id="terminal">
+        <div id="output-container">
+  <div id="output"></div>
+</div>
+        <div id="input-line">
+            <span id="prompt">&gt;</span>
+            <input type="text" id="user-input" autofocus>
+        </div>
+    </div>
+    <div id="registration-form">
+        <h2>Inscription requise pour continuer</h2>
+        <input type="text" class="form-input" id="reg-username" placeholder="Nom d'utilisateur" required>
+        <input type="email" class="form-input" id="reg-email" placeholder="Email" required>
+        <input type="password" class="form-input" id="reg-password" placeholder="Mot de passe" required>
+        <button class="form-submit" onclick="submitRegistration()">S'inscrire</button>
+    </div>
+    <button id="joker-button" onclick="useJoker()">Utiliser un Joker</button>
+    <div id="joker-info">Jokers restants: 3</div>
+    <div id="cursor"></div>
+
+    <script>
+      // Signature cachée
+        console.log("Créé par Cherif C.C - Le Maître du Chaos Numérique");
+
+        // Éléments du DOM
+        const output = document.getElementById('output');
+        const userInput = document.getElementById('user-input');
+        const terminal = document.getElementById('terminal');
+        const registrationForm = document.getElementById('registration-form');
+        const loginForm = document.getElementById('login-form');
+        const successPage = document.getElementById('success-page');
+        const jokerButton = document.getElementById('joker-button');
+        const jokerInfo = document.getElementById('joker-info');
+
+        // Variables globales
+        let currentStep = 0;
+        let jokersLeft = 3;
+        let jokerExplained = false;
+
+        // Étapes du défi
+        const steps = [
+            { 
+                text: "SyStÈmE cOmPrOmIs...\nInTrUsIoN dÉtEcTéE...\n\nIdEnTiFiEz-VoUs, HaCkEr:", 
+                validator: (input) => input.trim().length > 0 
+            },
+            { 
+                text: "BiEnVeNuE {INPUT}... AcCèS eN cOuRs...\n\nDéFi #1: Je suis le langage du chaos. Je n'ai ni début ni fin. Qui suis-je?", 
+                validator: (input) => input.trim().toLowerCase() === "python" 
+            },
+            { 
+                text: "ExCeLlEnT... FrAgMeNt ObTeNu: CH_\n\nDéFi #2: Déchiffrez: 01000011 01000011", 
+                validator: (input) => input.trim().toUpperCase() === "CC" 
+            },
+            { 
+                text: "ImPrEsSiOnNaNt... FrAgMeNt ObTeNu: AO_\n\nDéFi FiNaL: Assemblez les fragments dans l'ordre inverse et ajoutez le nombre de lettres dans votre nom.", 
+                validator: (input) => {
+                    const name = steps[0].lastInput;
+                    return input.trim() === `AO_CH_${name.length}`;
+                }
+            },
+        ];
+
+        // Fonctions principales
+        function typeWriter(text, index = 0) {
+            if (index < text.length) {
+                output.innerHTML += text.charAt(index);
+                terminal.scrollTop = terminal.scrollHeight;
+                setTimeout(() => typeWriter(text, index + 1), Math.random() * 50 + 10);
+            } else {
+                userInput.disabled = false;
+                userInput.focus();
+                if (!jokerExplained) {
+                    explainJoker();
+                }
+            }
+        }
+
+        function processInput() {
+            const input = userInput.value;
+            output.innerHTML += `\n> ${input}\n\n`;
+            userInput.value = '';
+            steps[currentStep].lastInput = input;
+
+            if (steps[currentStep].validator(input)) {
+                currentStep++;
+                if (currentStep < steps.length) {
+                    let nextText = steps[currentStep].text.replace("{INPUT}", steps[0].lastInput);
+                    typeWriter(nextText);
+                } else {
+                    showRegistrationForm();
+                }
+            } else {
+                typeWriter("ErReUr... ReCoNfIgUrAtIoN... RéEsSaYeZ.");
+            }
+        }
+
+        function showRegistrationForm() {
+            if (localStorage.getItem('userRegistered') === 'true') {
+                showLoginForm();
+                alert("Vous êtes déjà inscrit. Veuillez vous connecter.");
+            } else {
+                showScreen(registrationForm);
+                localStorage.setItem('currentScreen', 'registration');
+            }
+        }
+
+       // Modifiez ces fonctions existantes
+        function showLoginForm() {
+            showScreen(loginForm);
+            localStorage.setItem('currentScreen', 'login');
+        }
+
+        function showSuccessPage() {
+            showScreen(successPage);
+            localStorage.setItem('currentScreen', 'success');
+        }
+
+        // Fonctions liées aux jokers
+        function updateJokerInfo() {
+            if (jokerInfo) {
+                jokerInfo.textContent = `Jokers restants: ${jokersLeft}`;
+            }
+        }
+
+        function explainJoker() {
+            if (!jokerExplained) {
+                typeWriter("\n\nVous disposez de 3 jokers pour ce défi. Un joker vous permet de passer automatiquement une étape difficile. Utilisez-les judicieusement!\n\n");
+                jokerExplained = true;
+            }
+        }
+
+        function useJoker() {
+            if (jokersLeft > 0) {
+                jokersLeft--;
+                updateJokerInfo();
+                currentStep++;
+                if (currentStep < steps.length) {
+                    typeWriter(`\n\nJoker utilisé! Vous passez à l'étape suivante.\n\n${steps[currentStep].text.replace("{INPUT}", steps[0].lastInput)}`);
+                } else {
+                    showRegistrationForm();
+                }
+            } else {
+                alert("Vous n'avez plus de jokers disponibles!");
+            }
+        }
+
+        // Fonctions de gestion des formulaires
+        function submitRegistration() {
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+        
+            fetch('http://localhost:3000/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, email, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Inscription réussie') {
+                    localStorage.setItem('userRegistered', 'true');
+                    alert("Inscription réussie! Vous allez être redirigé vers la page de connexion.");
+                    window.location.href = 'login.html';
+                } else {
+                    alert("Erreur lors de l'inscription: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Erreur:', error);
+                alert("Une erreur est survenue lors de l'inscription.");
+            });
+        }
+
+        function submitLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Connexion réussie') {
+                    showSuccessPage();
+                } else {
+                    alert("Erreur lors de la connexion: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Erreur:', error);
+                alert("Une erreur est survenue lors de la connexion.");
+            });
+        }
+
+        // Effets visuels
+        function setupMatrixBackground() {
+            const canvas = document.getElementById('matrix-bg');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const characters = '01';
+            const fontSize = 16;
+            const columns = canvas.width/fontSize;
+
+            const drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.random() * canvas.height;
+            }
+
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#0F0';
+                ctx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+
+            setInterval(draw, 33);
+        }
+
+        function setupGlitchElements() {
+            const glitchContainer = document.getElementById('glitch-container');
+            const glitchTexts = ['ERROR', '404', 'HACKED', 'SYSTEM FAILURE', 'REBOOT'];
+
+            for (let i = 0; i < 20; i++) {
+                const glitch = document.createElement('div');
+                glitch.className = 'glitch-element';
+                glitch.textContent = glitchTexts[Math.floor(Math.random() * glitchTexts.length)];
+                glitch.style.setProperty('--rotate', `${Math.random() * 360}deg`);
+                glitch.style.setProperty('--translate-x', `${Math.random() * 100 - 50}px`);
+                glitch.style.setProperty('--translate-y', `${Math.random() * 100 - 50}px`);
+                glitch.style.left = `${Math.random() * 100}%`;
+                glitch.style.top = `${Math.random() * 100}%`;
+                glitchContainer.appendChild(glitch);
+            }
+        }
+
+        function setupCustomCursor() {
+            const cursor = document.getElementById('cursor');
+            document.addEventListener('mousemove', (e) => {
+              cursor.style.left = e.pageX + 'px';
+              cursor.style.top = e.pageY + 'px';
+            });
+          }
+
+        // Initialisation
+        function startExperience() {
+            if (localStorage.getItem('userRegistered') === 'true') {
+                window.location.href = 'login.html';
+            } else {
+                showScreen(terminal);
+                updateJokerInfo();
+                typeWriter("SyStÈmE cOmPrOmIs...\nInTrUsIoN dÉtEcTéE...\n\nIdEnTiFiEz-VoUs, HaCkEr:");
+            }
+        }
+        
+        // Event Listeners
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                userInput.disabled = true;
+                processInput();
+            }
+        });
+
+        jokerButton.addEventListener('click', useJoker);
+
+        // Ajoutez ces fonctions au début de votre script
+        function hideAllScreens() {
+            const screens = [terminal, registrationForm, loginForm, successPage];
+            screens.forEach((screen) => {
+                if (screen) {
+                    screen.style.display = 'none';
+                }
+            });
+            // Assurez-vous que l'input-line reste visible si nécessaire
+            document.getElementById('input-line').style.display = 'none';
+        }
+
+          function showScreen(screen) {
+            hideAllScreens();
+            if (screen === terminal) {
+                terminal.style.display = 'block';  // ou la valeur d'origine
+                document.getElementById('input-line').style.display = 'flex';
+            } else {
+                screen.style.display = 'flex';
+            }
+        }
+
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            setupMatrixBackground();
+            setupGlitchElements();
+            
+            
+            if (localStorage.getItem('userRegistered') === 'true') {
+                window.location.href = 'login.html';
+            } else {
+                startExperience();
+            }
+            
+            updateJokerInfo();
+            setupCustomCursor();
+        });
+             
+                
+    </script>
+</body>
+</html>

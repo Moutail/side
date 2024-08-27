@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - H4CK3D</title>
+    <style>
+        /* Copiez les styles pertinents de votre page principale ici */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'VT323', monospace;
+            background-color: #000;
+            color: #0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #login-form {
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0f0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px #0f0;
+            width: 300px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: transparent;
+            border: 1px solid #0f0;
+            color: #0f0;
+            font-family: 'VT323', monospace;
+        }
+        .form-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #0f0;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-family: 'VT323', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-form">
+        <h2>Connexion</h2>
+        <input type="text" class="form-input" id="login-username" placeholder="Nom d'utilisateur" required>
+        <input type="password" class="form-input" id="login-password" placeholder="Mot de passe" required>
+        <button class="form-submit" onclick="submitLogin()">Se connecter</button>
+    </div>
+
+    <script>
+        function submitLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+        
+            fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Connexion réussie') {
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('jokersLeft', data.jokersLeft); // Stockez le nombre de jokers
+                    window.location.href = 'success.html';
+                } else {
+                    alert("Erreur lors de la connexion: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Erreur:', error);
+                alert("Une erreur est survenue lors de la connexion.");
+            });
+        }
+    </script>
+</body>
+</html>

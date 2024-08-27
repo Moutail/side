@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - H4CK3D</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #0a0e17;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+        }
+
+        #toggle-auto-response {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #1a1f2c;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        #toggle-auto-response:hover {
+            background-color: #00ff00;
+            color: #0a0e17;
+        }
+
+        #questions-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .question-card {
+            background-color: #1a1f2c;
+            border: 1px solid #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .question-card p {
+            margin: 0 0 10px 0;
+        }
+
+        .question-card textarea {
+            width: 100%;
+            background-color: #0a0e17;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            margin-bottom: 10px;
+        }
+
+        .question-card button {
+            background-color: #00ff00;
+            color: #0a0e17;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            transition: all 0.3s ease;
+        }
+
+        .question-card button:hover {
+            background-color: #0a0e17;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 0.05em 0 0 #00ff00, -0.05em -0.025em 0 #fc00ff, -0.025em 0.05em 0 #fffc00; }
+            14% { text-shadow: 0.05em 0 0 #00ff00, -0.05em -0.025em 0 #fc00ff, -0.025em 0.05em 0 #fffc00; }
+            15% { text-shadow: -0.05em -0.025em 0 #00ff00, 0.025em 0.025em 0 #fc00ff, -0.05em -0.05em 0 #fffc00; }
+            49% { text-shadow: -0.05em -0.025em 0 #00ff00, 0.025em 0.025em 0 #fc00ff, -0.05em -0.05em 0 #fffc00; }
+            50% { text-shadow: 0.025em 0.05em 0 #00ff00, 0.05em 0 0 #fc00ff, 0 -0.05em 0 #fffc00; }
+            99% { text-shadow: 0.025em 0.05em 0 #00ff00, 0.05em 0 0 #fc00ff, 0 -0.05em 0 #fffc00; }
+            100% { text-shadow: -0.025em 0 0 #00ff00, -0.025em -0.025em 0 #fc00ff, -0.025em -0.05em 0 #fffc00; }
+        }
+
+        h1:hover {
+            animation: glitch 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <h1>H4CK3D Admin</h1>
+    <button id="toggle-auto-response">Activer/Désactiver les réponses automatiques</button>
+    <div id="questions-list"></div>
+
+    <script>
+        function loadQuestions() {
+            fetch('http://localhost:3000/admin/questions')
+                .then(response => response.json())
+                .then(questions => {
+                    const questionsList = document.getElementById('questions-list');
+                    questionsList.innerHTML = '';
+                    questions.forEach(q => {
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = 'question-card';
+                        questionDiv.innerHTML = `
+                            <p><strong>${q.username}:</strong> ${q.question}</p>
+                            ${q.answered ? `<p>Réponse: ${q.answer}</p>` : `
+                                <textarea id="answer-${q.id}" rows="3" placeholder="Votre réponse..."></textarea>
+                                <button onclick="answerQuestion(${q.id})">Répondre</button>
+                            `}
+                        `;
+                        questionsList.appendChild(questionDiv);
+                    });
+                });
+        }
+
+        function answerQuestion(questionId) {
+            const answer = document.getElementById(`answer-${questionId}`).value;
+            fetch('http://localhost:3000/admin/answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ questionId, answer })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadQuestions();
+                }
+            });
+        }
+
+        document.getElementById('toggle-auto-response').addEventListener('click', function() {
+            fetch('http://localhost:3000/admin/toggle-auto-response', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    this.textContent = data.autoResponseEnabled ? "Désactiver les réponses automatiques" : "Activer les réponses automatiques";
+                    this.style.backgroundColor = data.autoResponseEnabled ? "#00ff00" : "#1a1f2c";
+                    this.style.color = data.autoResponseEnabled ? "#0a0e17" : "#00ff00";
+                });
+        });
+
+        loadQuestions();
+        setInterval(loadQuestions, 30000); // Rafraîchit toutes les 30 secondes
+    </script>
+</body>
+</html>
